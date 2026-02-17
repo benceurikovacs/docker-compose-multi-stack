@@ -1,0 +1,59 @@
+services:
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - backend
+    networks:
+      - app-network
+
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=devopsdb
+      - POSTGRES_USER=devops
+      - POSTGRES_PASSWORD=secret123
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - app-network
+
+  backend:
+    build: ./backend
+    ports:
+      - "3000:3000"
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=devopsdb
+      - DB_USER=devops
+      - DB_PASS=secret123
+    depends_on:
+      - postgres
+    networks:
+      - app-network
+
+  grafana:
+    image: grafana/grafana:10.2.0
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+    volumes:
+      - grafana_data:/var/lib/grafana
+    networks:
+      - app-network
+
+volumes:
+  postgres_data:
+  grafana_data:
+
+networks:
+  app-network:
+    driver: bridge
